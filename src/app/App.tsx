@@ -24,6 +24,13 @@ import {
     eliminarEnvio
 } from "./services/enviosService";
 
+import {
+    obtenerRepartidores,
+    crearRepartidor,
+    actualizarRepartidor,
+    eliminarRepartidor
+} from "./services/repartidoresService";
+
 // ── Types ──────────────────────────────────────────────────────────────────
 type Screen =
   | "login" | "dashboard" | "clientes" | "sucursales"
@@ -1140,13 +1147,70 @@ function RepartidoresScreen({ data, setData, activeBranch }: { data: Repartidor[
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const openNew = () => { setForm({ codigo: "", cedula: "", nombres: "", apellidos: "", fecha_nac: "", direccion: "", ciudad: "", provincia: "", telefono: "", codigo_iata: filter === "ALL" ? "UIO" : filter }); setModal("new"); };
   const openEdit = (r: Repartidor) => { setForm({ ...r }); setModal("edit"); };
-  const save = () => {
-    if (!form.codigo || !form.cedula) return;
-    if (modal === "new") setData([...data, form]);
-    else setData(data.map(r => r.codigo === form.codigo ? form : r));
-    setModal("");
+  const save = async () => {
+      if (!form.codigo || !form.cedula) return;
+      const repartidorApi = {
+          codigoUnico: form.codigo,
+          cedula: form.cedula,
+          nombres: form.nombres,
+          apellidos: form.apellidos,
+          fechaNacimiento: form.fecha_nac,
+          direccion: form.direccion,
+          ciudad: form.ciudad,
+          provincia: form.provincia,
+          telefono: form.telefono,
+          codigoIata: form.codigo_iata
+      };
+      try {
+          if (modal === "new") {
+              await crearRepartidor(repartidorApi);
+          } else {
+              await actualizarRepartidor(repartidorApi);
+          }
+          const datos = await obtenerRepartidores();
+          const repartidores = datos.map((r: any) => ({
+              codigo: r.codigoUnico,
+              cedula: r.cedula,
+              nombres: r.nombres,
+              apellidos: r.apellidos,
+              fecha_nac: r.fechaNacimiento,
+              direccion: r.direccion,
+              ciudad: r.ciudad,
+              provincia: r.provincia,
+              telefono: r.telefono,
+              codigo_iata: r.codigoIata
+          }));
+          setData(repartidores);
+          setModal("");
+      } catch (error) {
+          console.error(error);
+          alert("Ocurrió un error al guardar el repartidor.");
+      }
   };
-  const remove = (id: string) => { setData(data.filter(r => r.codigo !== id)); setConfirmId(null); };
+
+  const remove = async (id: string) => {
+      try {
+          await eliminarRepartidor(id);
+          const datos = await obtenerRepartidores();
+          const repartidores = datos.map((r: any) => ({
+              codigo: r.codigoUnico,
+              cedula: r.cedula,
+              nombres: r.nombres,
+              apellidos: r.apellidos,
+              fecha_nac: r.fechaNacimiento,
+              direccion: r.direccion,
+              ciudad: r.ciudad,
+              provincia: r.provincia,
+              telefono: r.telefono,
+              codigo_iata: r.codigoIata
+          }));
+          setData(repartidores);
+          setConfirmId(null);
+      } catch (error) {
+          console.error(error);
+          alert("Ocurrió un error al eliminar el repartidor.");
+      }
+  };
 
   return (
     <div>
@@ -1162,15 +1226,16 @@ function RepartidoresScreen({ data, setData, activeBranch }: { data: Repartidor[
           </>
         }
       />
-
       <div className="flex items-center gap-2 mb-3">
-        {(["ALL", "UIO", "GYE"] as const).map(b => (
-          <FilterBtn key={b} label={b === "ALL" ? "Todos" : b === "UIO" ? "Quito · UIO" : "Guayaquil · GYE"}
-            active={filter === b} onClick={() => { setFilter(b); setPage(1); }} />
+        {(["GYE"] as const).map(b => (
+          <FilterBtn 
+            key={b} 
+            label="Guayaquil"
+            active={filter === b} 
+            onClick={() => { setFilter(b); setPage(1); }} />
         ))}
         <span className="ml-auto text-xs text-gray-400">{filtered.length} registros</span>
       </div>
-
       <div className="bg-white rounded-lg border border-[#1a3a6b]/10 shadow-sm">
         <TableWrap>
           <thead>
@@ -1334,13 +1399,16 @@ function EnviosScreen({ data, setData, clientes, vehiculos, repartidores, active
           </>
         }
       />
-
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        {(["ALL", "UIO", "GYE"] as const).map(b => (
-          <FilterBtn key={b} label={b === "ALL" ? "Todas las sucursales" : b === "UIO" ? "Quito · UIO" : "Guayaquil · GYE"}
-            active={filter === b} onClick={() => { setFilter(b); setPage(1); }} />
+        {(["GYE"] as const).map(b => (
+          <FilterBtn 
+            key={b} 
+            label="Guayaquil · GYE"
+            active={filter === b} 
+            onClick={() => { setFilter(b); setPage(1); }} 
+          />
         ))}
-        <div className="h-4 w-px bg-gray-200" />
+      <div className="h-4 w-px bg-gray-200" />
         {["ALL", ...ESTADOS].map(e => (
           <FilterBtn key={e} label={e === "ALL" ? "Todos los estados" : e}
             active={estadoFilter === e} onClick={() => { setEstadoFilter(e); setPage(1); }} />
@@ -1559,12 +1627,13 @@ export default function App() {
   const [sucursales, setSucursales] = useState<Sucursal[]>(seedSucursales);
   const [vehiculosId, setVehiculosId] = useState<VehiculoId[]>(seedVehiculosId);
   const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>(seedVehiculosTec);
-  const [repartidores, setRepartidores] = useState<Repartidor[]>(seedRepartidores);
+  const [repartidores, setRepartidores] = useState<Repartidor[]>([]);
   const [envios, setEnvios] = useState<Envio[]>([]);
 
   useEffect(() => {
       cargarClientes();
       cargarEnvios();
+      cargarRepartidores();
   }, []);
 
 
@@ -1596,6 +1665,27 @@ export default function App() {
           console.error(error);
       }
   }
+
+  async function cargarRepartidores() {
+    try {
+        const datos = await obtenerRepartidores();
+        const repartidores = datos.map((r: any) => ({
+            codigo: r.codigoUnico,
+            cedula: r.cedula,
+            nombres: r.nombres,
+            apellidos: r.apellidos,
+            fecha_nac: r.fechaNacimiento,
+            direccion: r.direccion,
+            ciudad: r.ciudad,
+            provincia: r.provincia,
+            telefono: r.telefono,
+            codigo_iata: r.codigoIata
+        }));
+        setRepartidores(repartidores);
+    } catch (error) {
+        console.error(error);
+    }
+}
 
   const handleLogin = (u: string) => { setUser(u); setScreen("dashboard"); };
   const handleLogout = () => { setScreen("login"); setUser(""); };

@@ -454,6 +454,165 @@ app.delete("/api/envios/:codigoPaquete", async (req, res) => {
     }
 });
 
+//----------------------------------------------------------Sucursal_GYE
+app.get("/api/repartidores", async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request().query(`
+            SELECT
+                Codigo_Unico AS codigoUnico,
+                Cedula AS cedula,
+                Nombres AS nombres,
+                Apellidos AS apellidos,
+                Fecha_Nacimiento AS fechaNacimiento,
+                Direccion AS direccion,
+                Ciudad AS ciudad,
+                Provincia AS provincia,
+                Telefono AS telefono,
+                Codigo_IATA AS codigoIata
+            FROM dbo.Repartidor_GYE
+        `);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+app.post("/api/repartidores", async (req, res) => {
+    try {
+        const {
+            codigoUnico,
+            cedula,
+            nombres,
+            apellidos,
+            fechaNacimiento,
+            direccion,
+            ciudad,
+            provincia,
+            telefono,
+            codigoIata
+        } = req.body;
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("codigoUnico", sql.Char(10), codigoUnico)
+            .input("cedula", sql.Char(10), cedula)
+            .input("nombres", sql.VarChar(50), nombres)
+            .input("apellidos", sql.VarChar(50), apellidos)
+            .input("fechaNacimiento", sql.Date, fechaNacimiento)
+            .input("direccion", sql.VarChar(100), direccion)
+            .input("ciudad", sql.VarChar(50), ciudad)
+            .input("provincia", sql.VarChar(50), provincia)
+            .input("telefono", sql.Char(10), telefono)
+            .input("codigoIata", sql.VarChar(5), codigoIata)
+            .query(`
+                INSERT INTO dbo.Repartidor_GYE
+                (
+                    Codigo_Unico,
+                    Cedula,
+                    Nombres,
+                    Apellidos,
+                    Fecha_Nacimiento,
+                    Direccion,
+                    Ciudad,
+                    Provincia,
+                    Telefono,
+                    Codigo_IATA
+                )
+                VALUES
+                (
+                    @codigoUnico,
+                    @cedula,
+                    @nombres,
+                    @apellidos,
+                    @fechaNacimiento,
+                    @direccion,
+                    @ciudad,
+                    @provincia,
+                    @telefono,
+                    @codigoIata
+                )
+            `);
+        res.status(201).json({
+            mensaje: "Repartidor creado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+app.put("/api/repartidores/:codigoUnico", async (req, res) => {
+    try {
+        const { codigoUnico } = req.params;
+        const {
+            cedula,
+            nombres,
+            apellidos,
+            fechaNacimiento,
+            direccion,
+            ciudad,
+            provincia,
+            telefono,
+            codigoIata
+        } = req.body;
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("codigoUnico", sql.Char(10), codigoUnico)
+            .input("cedula", sql.Char(10), cedula)
+            .input("nombres", sql.VarChar(50), nombres)
+            .input("apellidos", sql.VarChar(50), apellidos)
+            .input("fechaNacimiento", sql.Date, fechaNacimiento)
+            .input("direccion", sql.VarChar(100), direccion)
+            .input("ciudad", sql.VarChar(50), ciudad)
+            .input("provincia", sql.VarChar(50), provincia)
+            .input("telefono", sql.Char(10), telefono)
+            .input("codigoIata", sql.VarChar(5), codigoIata)
+            .query(`
+                UPDATE dbo.Repartidor_GYE
+                SET
+                    Cedula = @cedula,
+                    Nombres = @nombres,
+                    Apellidos = @apellidos,
+                    Fecha_Nacimiento = @fechaNacimiento,
+                    Direccion = @direccion,
+                    Ciudad = @ciudad,
+                    Provincia = @provincia,
+                    Telefono = @telefono,
+                    Codigo_IATA = @codigoIata
+                WHERE Codigo_Unico = @codigoUnico
+            `);
+        res.json({
+            mensaje: "Repartidor actualizado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+app.delete("/api/repartidores/:codigoUnico", async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("codigoUnico", sql.Char(10), req.params.codigoUnico)
+            .query(`
+                DELETE FROM dbo.Repartidor_GYE
+                WHERE Codigo_Unico = @codigoUnico
+            `);
+        res.json({
+            mensaje: "Repartidor eliminado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
 
 //-----------------------Puerto
 const PORT = process.env.PORT || 5000;
