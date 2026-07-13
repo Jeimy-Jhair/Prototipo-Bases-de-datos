@@ -17,6 +17,13 @@ import {
     eliminarCliente
 } from "./services/clientesService";
 
+import {
+    obtenerEnvios,
+    crearEnvio,
+    actualizarEnvio,
+    eliminarEnvio
+} from "./services/enviosService";
+
 // ── Types ──────────────────────────────────────────────────────────────────
 type Screen =
   | "login" | "dashboard" | "clientes" | "sucursales"
@@ -74,15 +81,6 @@ const seedRepartidores: Repartidor[] = [
   { codigo: "REP-003", cedula: "1778901234", nombres: "Cristian Paul", apellidos: "Naranjo Paz", fecha_nac: "1995-11-08", direccion: "Av. La Prensa N58-12", ciudad: "Quito", provincia: "Pichincha", telefono: "0983344556", codigo_iata: "UIO" },
   { codigo: "REP-004", cedula: "0967890123", nombres: "Elvis Rodrigo", apellidos: "Ponce León", fecha_nac: "1992-04-30", direccion: "Av. Quito 890", ciudad: "Guayaquil", provincia: "Guayas", telefono: "0974455667", codigo_iata: "GYE" },
   { codigo: "REP-005", cedula: "1789012345", nombres: "Santiago Iván", apellidos: "Cevallos Cruz", fecha_nac: "1993-09-14", direccion: "Barrio La Floresta", ciudad: "Quito", provincia: "Pichincha", telefono: "0985566778", codigo_iata: "UIO" },
-];
-
-const seedEnvios: Envio[] = [
-  { codigo_paquete: "ENV-2024-001", fecha_recepcion: "2024-01-15", estado: "Entregado", destino: "Av. República E7-45, Quito", cedula_cliente: "1712345678", placa: "PBB-1234", codigo_unico: "REP-001", codigo_iata: "UIO" },
-  { codigo_paquete: "ENV-2024-002", fecha_recepcion: "2024-01-16", estado: "En Tránsito", destino: "Cdla. Urdesa Central, GYE", cedula_cliente: "0923456789", placa: "GXA-5678", codigo_unico: "REP-002", codigo_iata: "GYE" },
-  { codigo_paquete: "ENV-2024-003", fecha_recepcion: "2024-01-17", estado: "Pendiente", destino: "Calle Rocafuerte 234, Quito", cedula_cliente: "1801234567", placa: "PCN-9012", codigo_unico: "REP-003", codigo_iata: "UIO" },
-  { codigo_paquete: "ENV-2024-004", fecha_recepcion: "2024-01-18", estado: "Entregado", destino: "Av. 9 de Octubre 1200, GYE", cedula_cliente: "0934567890", placa: "GYM-3456", codigo_unico: "REP-004", codigo_iata: "GYE" },
-  { codigo_paquete: "ENV-2024-005", fecha_recepcion: "2024-01-19", estado: "En Tránsito", destino: "Barrio Solanda, Quito", cedula_cliente: "1723456789", placa: "PEF-7890", codigo_unico: "REP-005", codigo_iata: "UIO" },
-  { codigo_paquete: "ENV-2024-006", fecha_recepcion: "2024-01-20", estado: "Cancelado", destino: "Vía a Samborondón Km 2", cedula_cliente: "0945678901", placa: "GHJ-2345", codigo_unico: "REP-002", codigo_iata: "GYE" },
 ];
 
 // ── Charts data ────────────────────────────────────────────────────────────
@@ -1258,13 +1256,64 @@ function EnviosScreen({ data, setData, clientes, vehiculos, repartidores, active
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const openNew = () => { setForm({ ...blank, codigo_iata: filter === "ALL" ? "UIO" : filter }); setModal("new"); };
   const openEdit = (e: Envio) => { setForm({ ...e }); setModal("edit"); };
-  const save = () => {
-    if (!form.codigo_paquete) return;
-    if (modal === "new") setData([...data, form]);
-    else setData(data.map(e => e.codigo_paquete === form.codigo_paquete ? form : e));
-    setModal("");
+  const save = async () => {
+      if (!form.codigo_paquete) return;
+      const envioApi = {
+          codigoPaquete: form.codigo_paquete,
+          fechaRecepcion: form.fecha_recepcion,
+          estado: form.estado,
+          destino: form.destino,
+          cedulaCliente: form.cedula_cliente,
+          placa: form.placa,
+          codigoUnico: form.codigo_unico,
+          codigoIata: form.codigo_iata
+      };
+      try {
+          if (modal === "new") {
+              await crearEnvio(envioApi);
+          } else {
+              await actualizarEnvio(envioApi);
+          }
+          const datos = await obtenerEnvios();
+          const envios = datos.map((e: any) => ({
+              codigo_paquete: e.codigoPaquete,
+              fecha_recepcion: e.fechaRecepcion,
+              estado: e.estado,
+              destino: e.destino,
+              cedula_cliente: e.cedulaCliente,
+              placa: e.placa,
+              codigo_unico: e.codigoUnico,
+              codigo_iata: e.codigoIata
+          }));
+          setData(envios);
+          setModal("");
+      } catch (error) {
+          console.error(error);
+          alert("Ocurrió un error al guardar el envío.");
+      }
   };
-  const remove = (id: string) => { setData(data.filter(e => e.codigo_paquete !== id)); setConfirmId(null); };
+
+  const remove = async (id: string) => {
+    try {
+        await eliminarEnvio(id);
+        const datos = await obtenerEnvios();
+        const envios = datos.map((e: any) => ({
+            codigo_paquete: e.codigoPaquete,
+            fecha_recepcion: e.fechaRecepcion,
+            estado: e.estado,
+            destino: e.destino,
+            cedula_cliente: e.cedulaCliente,
+            placa: e.placa,
+            codigo_unico: e.codigoUnico,
+            codigo_iata: e.codigoIata
+        }));
+        setData(envios);
+        setConfirmId(null);
+    } catch (error) {
+        console.error(error);
+        alert("Ocurrió un error al eliminar el envío.");
+    }
+};
 
   const clienteNombre = (cedula: string) => {
     const c = clientes.find(x => x.cedula === cedula);
@@ -1511,16 +1560,38 @@ export default function App() {
   const [vehiculosId, setVehiculosId] = useState<VehiculoId[]>(seedVehiculosId);
   const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>(seedVehiculosTec);
   const [repartidores, setRepartidores] = useState<Repartidor[]>(seedRepartidores);
-  const [envios, setEnvios] = useState<Envio[]>(seedEnvios);
+  const [envios, setEnvios] = useState<Envio[]>([]);
 
   useEffect(() => {
       cargarClientes();
+      cargarEnvios();
   }, []);
+
+
 
   async function cargarClientes() {
       try {
           const datos = await obtenerClientes();
           setClientes(datos);
+      } catch (error) {
+          console.error(error);
+      }
+  }
+
+  async function cargarEnvios() {
+      try {
+          const datos = await obtenerEnvios();
+          const envios = datos.map((e: any) => ({
+              codigo_paquete: e.codigoPaquete,
+              fecha_recepcion: e.fechaRecepcion,
+              estado: e.estado,
+              destino: e.destino,
+              cedula_cliente: e.cedulaCliente,
+              placa: e.placa,
+              codigo_unico: e.codigoUnico,
+              codigo_iata: e.codigoIata
+          }));
+          setEnvios(envios);
       } catch (error) {
           console.error(error);
       }

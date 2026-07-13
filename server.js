@@ -32,7 +32,7 @@ sql.connect(dbConfig)
     .catch(err => {
         console.error('Error al conectar a SQL Server:', err);
     });
-
+//--------------------------------------------------------------------------Clientes
 // Ruta de ejemplo para probar que funciona --Cambio
 app.get("/api/clientes", async (req, res) => {
     try {
@@ -179,12 +179,6 @@ app.delete("/api/clientes/:cedula", async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`Servidor API corriendo localmente en http://localhost:${PORT}`);
-});
-
-
 app.post("/api/clientes", async (req,res)=>{
 
     try{
@@ -315,3 +309,154 @@ app.delete("/api/clientes/:cedula",async(req,res)=>{
 
 });
 
+//-----------------------------------------------------------Envio_GYE
+
+app.get("/api/envios", async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request().query(`
+            SELECT
+                Codigo_Paquete AS codigoPaquete,
+                Fecha_Recepcion AS fechaRecepcion,
+                Estado AS estado,
+                Destino AS destino,
+                Cedula_Cliente AS cedulaCliente,
+                Placa AS placa,
+                Codigo_Unico AS codigoUnico,
+                Codigo_IATA AS codigoIata
+            FROM dbo.Envio_GYE
+        `);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+
+app.post("/api/envios", async (req, res) => {
+    try {
+        const {
+            codigoPaquete,
+            fechaRecepcion,
+            estado,
+            destino,
+            cedulaCliente,
+            placa,
+            codigoUnico,
+            codigoIata
+        } = req.body;
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("codigoPaquete", sql.Char(10), codigoPaquete)
+            .input("fechaRecepcion", sql.Date, fechaRecepcion)
+            .input("estado", sql.VarChar(30), estado)
+            .input("destino", sql.VarChar(100), destino)
+            .input("cedulaCliente", sql.VarChar(10), cedulaCliente)
+            .input("placa", sql.Char(10), placa)
+            .input("codigoUnico", sql.Char(10), codigoUnico)
+            .input("codigoIata", sql.VarChar(5), codigoIata)
+            .query(`
+                INSERT INTO dbo.Envio_GYE
+                (
+                    Codigo_Paquete,
+                    Fecha_Recepcion,
+                    Estado,
+                    Destino,
+                    Cedula_Cliente,
+                    Placa,
+                    Codigo_Unico,
+                    Codigo_IATA
+                )
+                VALUES
+                (
+                    @codigoPaquete,
+                    @fechaRecepcion,
+                    @estado,
+                    @destino,
+                    @cedulaCliente,
+                    @placa,
+                    @codigoUnico,
+                    @codigoIata
+                )
+            `);
+        res.status(201).json({
+            mensaje: "Envío creado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+app.put("/api/envios/:codigoPaquete", async (req, res) => {
+    try {
+        const { codigoPaquete } = req.params;
+        const {
+            fechaRecepcion,
+            estado,
+            destino,
+            cedulaCliente,
+            placa,
+            codigoUnico,
+            codigoIata
+        } = req.body;
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("codigoPaquete", sql.Char(10), codigoPaquete)
+            .input("fechaRecepcion", sql.Date, fechaRecepcion)
+            .input("estado", sql.VarChar(30), estado)
+            .input("destino", sql.VarChar(100), destino)
+            .input("cedulaCliente", sql.VarChar(10), cedulaCliente)
+            .input("placa", sql.Char(10), placa)
+            .input("codigoUnico", sql.Char(10), codigoUnico)
+            .input("codigoIata", sql.VarChar(5), codigoIata)
+            .query(`
+                UPDATE dbo.Envio_GYE
+                SET
+                    Fecha_Recepcion = @fechaRecepcion,
+                    Estado = @estado,
+                    Destino = @destino,
+                    Cedula_Cliente = @cedulaCliente,
+                    Placa = @placa,
+                    Codigo_Unico = @codigoUnico,
+                    Codigo_IATA = @codigoIata
+                WHERE Codigo_Paquete = @codigoPaquete
+            `);
+        res.json({
+            mensaje: "Envío actualizado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+app.delete("/api/envios/:codigoPaquete", async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("codigoPaquete", sql.Char(10), req.params.codigoPaquete)
+            .query(`
+                DELETE FROM dbo.Envio_GYE
+                WHERE Codigo_Paquete = @codigoPaquete
+            `);
+        res.json({
+            mensaje: "Envío eliminado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+
+//-----------------------Puerto
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`Servidor API corriendo localmente en http://localhost:${PORT}`);
+});
