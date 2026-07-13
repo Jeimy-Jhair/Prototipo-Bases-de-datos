@@ -17,6 +17,13 @@ import {
     eliminarCliente
 } from "./services/clientesService";
 
+import {
+    obtenerSucursales,
+    crearSucursal,
+    actualizarSucursal,
+    eliminarSucursal
+} from "./services/sucursalesService";
+
 // ── Types ──────────────────────────────────────────────────────────────────
 type Screen =
   | "login" | "dashboard" | "clientes" | "sucursales"
@@ -28,7 +35,10 @@ interface Cliente {
   cedula: string; nombres: string; apellidos: string;
   calle:string; ciudad: string; provincia: string; telefono: string; contacto: string;
 }
-interface Sucursal { codigo_iata: string; ciudad: string; direccion: string; telefono: string; }
+interface Sucursal {
+    codigo_iata: string;
+    ciudad: string;
+}
 interface VehiculoId { placa: string; marca: string; modelo: string; color: string; }
 interface VehiculoTec { placa: string; anio: number; capacidad: string; codigo_iata: Branch; }
 interface Repartidor {
@@ -46,8 +56,8 @@ interface Envio {
 
 
 const seedSucursales: Sucursal[] = [
-  { codigo_iata: "UIO", ciudad: "Quito", direccion: "Av. Amazonas N37-29 y Naciones Unidas", telefono: "022345678" },
-  { codigo_iata: "GYE", ciudad: "Guayaquil", direccion: "Av. Francisco de Orellana 234, Edificio Centrum", telefono: "042345678" },
+  { codigo_iata: "UIO", ciudad: "Quito"},
+  { codigo_iata: "GYE", ciudad: "Guayaquil" },
 ];
 
 const seedVehiculosId: VehiculoId[] = [
@@ -158,20 +168,42 @@ function Btn({
   );
 }
 
-function Input({ label, value, onChange, type = "text", placeholder, required }: {
-  label: string; value: string; onChange: (v: string) => void;
-  type?: string; placeholder?: string; required?: boolean;
+function Input({
+  label,
+  value,
+  onChange,
+  type = "text",
+  placeholder,
+  required,
+  disabled = false
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+  placeholder?: string;
+  required?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold text-[#1a3a6b] uppercase tracking-wide">
-        {label}{required && <span className="text-red-500 ml-0.5">*</span>}
+        {label}
+        {required && <span className="text-red-500 ml-0.5">*</span>}
       </label>
+
       <input
-        type={type} value={value}
+        type={type}
+        value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full border border-[#1a3a6b]/20 rounded px-3 py-2 text-sm bg-[#f5f7fb] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent transition-all placeholder:text-gray-400"
+        disabled={disabled}
+        className={`w-full border border-[#1a3a6b]/20 rounded px-3 py-2 text-sm transition-all placeholder:text-gray-400
+          ${
+            disabled
+              ? "bg-gray-200 cursor-not-allowed"
+              : "bg-[#f5f7fb] focus:outline-none focus:ring-2 focus:ring-[#2563eb] focus:border-transparent"
+          }`}
       />
     </div>
   );
@@ -885,69 +917,298 @@ function ClientesScreen({ data, setData }: {
 function SucursalesScreen({ data, setData }: { data: Sucursal[]; setData: (d: Sucursal[]) => void }) {
   const [modal, setModal] = useState<"" | "new" | "edit">("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [form, setForm] = useState<Sucursal>({ codigo_iata: "", ciudad: "", direccion: "", telefono: "" });
+  const [form, setForm] = useState<Sucursal>({
+    codigo_iata: "",
+    ciudad: ""
+});
 
-  const openNew = () => { setForm({ codigo_iata: "", ciudad: "", direccion: "", telefono: "" }); setModal("new"); };
+   const openNew = () => {
+    setForm({
+        codigo_iata: "",
+        ciudad: ""
+    });
+
+    setModal("new");
+};
   const openEdit = (s: Sucursal) => { setForm({ ...s }); setModal("edit"); };
-  const save = () => {
+  const save = async () => {
+
     if (!form.codigo_iata || !form.ciudad) return;
-    if (modal === "new") setData([...data, form]);
-    else setData(data.map(s => s.codigo_iata === form.codigo_iata ? form : s));
-    setModal("");
-  };
-  const remove = (id: string) => { setData(data.filter(s => s.codigo_iata !== id)); setConfirmId(null); };
+
+    try {
+
+        if (modal === "new") {
+
+            await crearSucursal({
+                codigo: form.codigo_iata,
+                ciudad: form.ciudad
+            });
+
+        } else {
+
+            await actualizarSucursal({
+                codigo: form.codigo_iata,
+                ciudad: form.ciudad
+            });
+
+        }
+
+        const datos = await obtenerSucursales();
+
+        setData(datos);
+
+        setModal("");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Ocurrió un error al guardar la sucursal.");
+
+    }
+
+};
+
+ const remove = async (codigo_iata: string) => {
+
+    try {
+
+        await eliminarSucursal(codigo_iata);
+
+        const datos = await obtenerSucursales();
+
+        setData(datos);
+
+        setConfirmId(null);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Ocurrió un error al eliminar la sucursal.");
+
+    }
+
+};
 
   return (
     <div>
-      <Breadcrumb items={["Inicio", "Replicación", "Sucursales"]} />
-      <PageHeader
-        title="Gestión de Sucursales"
-        subtitle="Tabla replicada en ambos nodos"
-        actions={
-          <><Btn variant="save" icon={<Plus size={14} />} onClick={openNew}>Nueva Sucursal</Btn></>
-        }
-      />
-      <div className="bg-white rounded-lg border border-[#1a3a6b]/10 shadow-sm">
-        <TableWrap>
-          <thead><tr><Th>Código IATA</Th><Th>Ciudad</Th><Th>Dirección</Th><Th>Teléfono</Th><Th>Rol DB</Th><Th>Acciones</Th></tr></thead>
-          <tbody>
-            {data.map((s, i) => (
-              <tr key={s.codigo_iata} className={`hover:bg-[#f5f7fb] transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/50"}`}>
-                <Td><span className="font-mono font-bold text-[#1a3a6b] text-sm">{s.codigo_iata}</span></Td>
-                <Td><div className="flex items-center gap-1.5"><MapPin size={13} className="text-[#2563eb]" /><span className="font-medium">{s.ciudad}</span></div></Td>
-                <Td>{s.direccion}</Td>
-                <Td><span className="font-mono text-xs">{s.telefono}</span></Td>
-                <Td>
-                  {s.codigo_iata === "UIO"
-                    ? <div className="flex gap-1"><Badge label="GCS" color="blue" /><Badge label="LCS1" color="gray" /></div>
-                    : <Badge label="LCS2" color="green" />}
-                </Td>
-                <Td>
-                  <div className="flex gap-1">
-                    <Btn size="sm" variant="edit" icon={<Edit2 size={11} />} onClick={() => openEdit(s)}>Editar</Btn>
-                    <Btn size="sm" variant="danger" icon={<Trash2 size={11} />} onClick={() => setConfirmId(s.codigo_iata)}>Eliminar</Btn>
-                  </div>
-                </Td>
-              </tr>
-            ))}
-          </tbody>
-        </TableWrap>
-      </div>
+        <Breadcrumb items={["Inicio", "Replicación", "Sucursales"]} />
 
-      {(modal === "new" || modal === "edit") && (
-        <Modal title={modal === "new" ? "Nueva Sucursal" : "Editar Sucursal"} onClose={() => setModal("")}
-          footer={<><Btn variant="ghost" onClick={() => setModal("")}>Cancelar</Btn><Btn variant="save" icon={<Check size={14} />} onClick={save}>Guardar</Btn></>}>
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Código IATA" value={form.codigo_iata} onChange={v => setForm({ ...form, codigo_iata: v })} required />
-            <Input label="Ciudad" value={form.ciudad} onChange={v => setForm({ ...form, ciudad: v })} required />
-            <div className="col-span-2"><Input label="Dirección" value={form.direccion} onChange={v => setForm({ ...form, direccion: v })} /></div>
-            <Input label="Teléfono" value={form.telefono} onChange={v => setForm({ ...form, telefono: v })} />
-          </div>
-        </Modal>
-      )}
-      {confirmId && <ConfirmDialog message={`¿Eliminar la sucursal ${confirmId}?`} onConfirm={() => remove(confirmId)} onCancel={() => setConfirmId(null)} />}
+        <PageHeader
+            title="Gestión de Sucursales"
+            subtitle="Tabla replicada en ambos nodos"
+            actions={
+                <>
+                    <Btn
+                        variant="save"
+                        icon={<Plus size={14} />}
+                        onClick={openNew}
+                    >
+                        Nueva Sucursal
+                    </Btn>
+                </>
+            }
+        />
+
+        <div className="bg-white rounded-lg border border-[#1a3a6b]/10 shadow-sm">
+
+            <TableWrap>
+
+                <thead>
+
+                    <tr>
+
+                        <Th>Código IATA</Th>
+
+                        <Th>Ciudad</Th>
+
+                        <Th>Rol DB</Th>
+
+                        <Th>Acciones</Th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {data.map((s, i) => (
+
+                        <tr
+                            key={s.codigo_iata}
+                            className={`hover:bg-[#f5f7fb] transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/50"}`}
+                        >
+
+                            <Td>
+
+                                <span className="font-mono font-bold text-[#1a3a6b] text-sm">
+
+                                    {s.codigo_iata}
+
+                                </span>
+
+                            </Td>
+
+                            <Td>
+
+                                <div className="flex items-center gap-1.5">
+
+                                    <MapPin
+                                        size={13}
+                                        className="text-[#2563eb]"
+                                    />
+
+                                    <span className="font-medium">
+
+                                        {s.ciudad}
+
+                                    </span>
+
+                                </div>
+
+                            </Td>
+
+                            <Td>
+
+                                {s.codigo_iata === "UIO"
+
+                                    ?
+
+                                    <div className="flex gap-1">
+
+                                        <Badge label="GCS" color="blue" />
+
+                                        <Badge label="LCS1" color="gray" />
+
+                                    </div>
+
+                                    :
+
+                                    <Badge label="LCS2" color="green" />
+
+                                }
+
+                            </Td>
+
+                            <Td>
+
+                                <div className="flex gap-1">
+
+                                    <Btn
+                                        size="sm"
+                                        variant="edit"
+                                        icon={<Edit2 size={11} />}
+                                        onClick={() => openEdit(s)}
+                                    >
+                                        Editar
+                                    </Btn>
+
+                                    <Btn
+                                        size="sm"
+                                        variant="danger"
+                                        icon={<Trash2 size={11} />}
+                                        onClick={() => setConfirmId(s.codigo_iata)}
+                                    >
+                                        Eliminar
+                                    </Btn>
+
+                                </div>
+
+                            </Td>
+
+                        </tr>
+
+                    ))}
+
+                </tbody>
+
+            </TableWrap>
+
+        </div>
+
+        {(modal === "new" || modal === "edit") && (
+
+            <Modal
+
+                title={modal === "new"
+                    ? "Nueva Sucursal"
+                    : "Editar Sucursal"}
+
+                onClose={() => setModal("")}
+
+                footer={
+                    <>
+
+                        <Btn
+                            variant="ghost"
+                            onClick={() => setModal("")}
+                        >
+                            Cancelar
+                        </Btn>
+
+                        <Btn
+                            variant="save"
+                            icon={<Check size={14} />}
+                            onClick={save}
+                        >
+                            Guardar
+                        </Btn>
+
+                    </>
+                }
+
+            >
+
+                <div className="grid grid-cols-2 gap-3">
+
+                <Input
+    label="Código IATA"
+    value={form.codigo_iata}
+    onChange={v =>
+        setForm({
+            ...form,
+            codigo_iata: v
+        })
+    }
+    disabled={modal === "edit"}
+    required
+/>
+
+                    <Input
+                        label="Ciudad"
+                        value={form.ciudad}
+                        onChange={v =>
+                            setForm({
+                                ...form,
+                                ciudad: v
+                            })
+                        }
+                        required
+                    />
+
+                </div>
+
+            </Modal>
+
+        )}
+
+        {confirmId && (
+
+            <ConfirmDialog
+
+                message={`¿Eliminar la sucursal ${confirmId}?`}
+
+                onConfirm={() => remove(confirmId)}
+
+                onCancel={() => setConfirmId(null)}
+
+            />
+
+        )}
+
     </div>
-  );
+);
 }
 
 // ── VEHICULOS ID ───────────────────────────────────────────────────────────
@@ -1507,7 +1768,7 @@ export default function App() {
   const [activeBranch, setActiveBranch] = useState<Branch>("UIO");
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [sucursales, setSucursales] = useState<Sucursal[]>(seedSucursales);
+  const [sucursales, setSucursales] = useState<Sucursal[]>([]);
   const [vehiculosId, setVehiculosId] = useState<VehiculoId[]>(seedVehiculosId);
   const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>(seedVehiculosTec);
   const [repartidores, setRepartidores] = useState<Repartidor[]>(seedRepartidores);
@@ -1515,6 +1776,7 @@ export default function App() {
 
   useEffect(() => {
       cargarClientes();
+      cargarSucursales();
   }, []);
 
   async function cargarClientes() {
@@ -1525,6 +1787,23 @@ export default function App() {
           console.error(error);
       }
   }
+
+  async function cargarSucursales() {
+
+    try {
+
+        const datos = await obtenerSucursales();
+
+        setSucursales(datos);
+
+    }
+    catch (error) {
+
+        console.error(error);
+
+    }
+
+}
 
   const handleLogin = (u: string) => { setUser(u); setScreen("dashboard"); };
   const handleLogout = () => { setScreen("login"); setUser(""); };

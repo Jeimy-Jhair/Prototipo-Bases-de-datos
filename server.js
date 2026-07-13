@@ -7,12 +7,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Configuración de conexión a SQL Server
+
+
 const dbConfig = {
     user: 'sa',
-    password: 'Jeimy13', // Reemplaza con la contraseña que le pusiste al sa
-    server: '10.245.144.186', // O el nombre/IP de tu máquina
-    database: 'Guayaquil', // Reemplaza con tu base de datos de Guayaquil
+    password: 'Saltos05', // Reemplaza con la contraseña que le pusiste al sa
+    server: '10.245.144.13', // O el nombre/IP de tu máquina
+    database: 'Quito', // Reemplaza con tu base de datos de Guayaquil
     options: {
         encrypt: false, // Ponlo en true si usas Azure o certificados de seguridad SSL
         trustServerCertificate: true, // Crucial para entornos locales
@@ -20,13 +21,13 @@ const dbConfig = {
     port: 1433
 };
 
-// Intentar conectar a la base de datos al iniciar
+
 sql.connect(dbConfig)
     .then(pool => {
         if (pool.connecting) {
             console.log('Conectando a SQL Server...');
         } else {
-            console.log('¡Conectado exitosamente a SQL Server (Nodo Guayaquil)!');
+            console.log('¡Conectado exitosamente a SQL Server (Nodo Quito)!');
         }
     })
     .catch(err => {
@@ -315,3 +316,136 @@ app.delete("/api/clientes/:cedula",async(req,res)=>{
 
 });
 
+
+app.get("/api/sucursales", async (req, res) => {
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request().query(`
+            SELECT
+                Codigo_IATA AS codigo_iata,
+                Ciudad AS ciudad
+            FROM dbo.Sucursal
+        `);
+
+        res.json(result.recordset);
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+app.post("/api/sucursales", async (req, res) => {
+
+    try {
+
+        const { codigo, ciudad } = req.body;
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("codigo", sql.Char(3), codigo)
+            .input("ciudad", sql.VarChar(50), ciudad)
+
+            .query(`
+                INSERT INTO dbo.Sucursal
+                (
+                    Codigo_IATA,
+                    Ciudad
+                )
+
+                VALUES
+                (
+                    @codigo,
+                    @ciudad
+                )
+            `);
+
+        res.json({
+            mensaje: "Sucursal creada."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+app.put("/api/sucursales/:codigo", async (req, res) => {
+
+    try {
+
+        const { ciudad } = req.body;
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("codigo", sql.Char(3), req.params.codigo)
+            .input("ciudad", sql.VarChar(50), ciudad)
+
+            .query(`
+                UPDATE dbo.Sucursal
+
+                SET Ciudad=@ciudad
+
+                WHERE Codigo_IATA=@codigo
+            `);
+
+        res.json({
+            mensaje: "Sucursal actualizada."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+
+
+app.delete("/api/sucursales/:codigo", async (req, res) => {
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("codigo", sql.Char(3), req.params.codigo)
+
+            .query(`
+                DELETE
+                FROM dbo.Sucursal
+                WHERE Codigo_IATA=@codigo
+            `);
+
+        res.json({
+            mensaje: "Sucursal eliminada."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
