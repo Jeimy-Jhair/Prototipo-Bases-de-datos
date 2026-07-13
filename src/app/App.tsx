@@ -1129,13 +1129,13 @@ function VehiculosTecScreen({ data, setData, activeBranch }: { data: VehiculoTec
 }
 
 // ── REPARTIDORES ───────────────────────────────────────────────────────────
-function RepartidoresScreen({ data, setData, activeBranch }: { data: Repartidor[]; setData: (d: Repartidor[]) => void; activeBranch: Branch }) {
-  const [filter, setFilter] = useState<"ALL" | Branch>(activeBranch);
+function RepartidoresScreen({ data, setData }: { data: Repartidor[]; setData: (d: Repartidor[]) => void; activeBranch: Branch }) {
+  const [filter, setFilter] = useState<"ALL" | Branch>("GYE");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<"" | "new" | "edit">("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  useEffect(() => { setFilter(activeBranch); setPage(1); }, [activeBranch]);
+  useEffect(() => { setFilter("GYE"); setPage(1); }, ["GYE"]);
   const [form, setForm] = useState<Repartidor>({ codigo: "", cedula: "", nombres: "", apellidos: "", fecha_nac: "", direccion: "", ciudad: "", provincia: "", telefono: "", codigo_iata: "UIO" });
   const PER_PAGE = 5;
 
@@ -1296,30 +1296,30 @@ function RepartidoresScreen({ data, setData, activeBranch }: { data: Repartidor[
 // ── ENVIOS ─────────────────────────────────────────────────────────────────
 const ESTADOS = ["Pendiente", "En Tránsito", "Entregado", "Cancelado"];
 
-function EnviosScreen({ data, setData, clientes, vehiculos, repartidores, activeBranch }: {
+function EnviosScreen({ data, setData, clientes, vehiculos, repartidores }: {
   data: Envio[]; setData: (d: Envio[]) => void;
   clientes: Cliente[]; vehiculos: VehiculoId[]; repartidores: Repartidor[];
   activeBranch: Branch;
 }) {
-  const [filter, setFilter] = useState<"ALL" | Branch>(activeBranch);
+  const [filter, setFilter] = useState<"GYE" | Branch>("GYE");
   const [estadoFilter, setEstadoFilter] = useState("ALL");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<"" | "new" | "edit">("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const blank: Envio = { codigo_paquete: "", fecha_recepcion: "", estado: "Pendiente", destino: "", cedula_cliente: "", placa: "", codigo_unico: "", codigo_iata: "UIO" };
+  const blank: Envio = { codigo_paquete: "", fecha_recepcion: "", estado: "Pendiente", destino: "", cedula_cliente: "", placa: "", codigo_unico: "", codigo_iata: "GYE" };
   const [form, setForm] = useState<Envio>(blank);
   const PER_PAGE = 5;
-  useEffect(() => { setFilter(activeBranch); setPage(1); }, [activeBranch]);
+  useEffect(() => { setFilter("GYE"); setPage(1); }, ["GYE"]);
 
   const filtered = useMemo(() => data
-    .filter(e => filter === "ALL" || e.codigo_iata === filter)
+    .filter(e => filter === "GYE" || e.codigo_iata === filter)
     .filter(e => estadoFilter === "ALL" || e.estado === estadoFilter)
     .filter(e => [e.codigo_paquete, e.destino, e.cedula_cliente].some(f => f.toLowerCase().includes(search.toLowerCase())))
   , [data, filter, estadoFilter, search]);
 
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const openNew = () => { setForm({ ...blank, codigo_iata: filter === "ALL" ? "UIO" : filter }); setModal("new"); };
+  const openNew = () => { setForm({ ...blank, codigo_iata: filter === "GYE" ? "UIO" : filter }); setModal("new"); };
   const openEdit = (e: Envio) => { setForm({ ...e }); setModal("edit"); };
   const save = async () => {
       if (!form.codigo_paquete) return;
