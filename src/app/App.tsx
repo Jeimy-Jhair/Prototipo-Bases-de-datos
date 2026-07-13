@@ -10,6 +10,12 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, Legend, AreaChart, Area
 } from "recharts";
+import {
+    obtenerClientes,
+    crearCliente,
+    actualizarCliente,
+    eliminarCliente
+} from "./services/clientesService";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Screen =
@@ -20,7 +26,7 @@ type Branch = "UIO" | "GYE";
 
 interface Cliente {
   cedula: string; nombres: string; apellidos: string;
-  ciudad: string; provincia: string; telefono: string; contacto: string;
+  calle:string; ciudad: string; provincia: string; telefono: string; contacto: string;
 }
 interface Sucursal { codigo_iata: string; ciudad: string; direccion: string; telefono: string; }
 interface VehiculoId { placa: string; marca: string; modelo: string; color: string; }
@@ -37,16 +43,7 @@ interface Envio {
 }
 
 // ── Seed data ──────────────────────────────────────────────────────────────
-const seedClientes: Cliente[] = [
-  { cedula: "1712345678", nombres: "Carlos Eduardo", apellidos: "Paredes Vega", ciudad: "Quito", provincia: "Pichincha", telefono: "0991234567", contacto: "0987654321" },
-  { cedula: "0923456789", nombres: "María Fernanda", apellidos: "Torres Loor", ciudad: "Guayaquil", provincia: "Guayas", telefono: "0965432100", contacto: "0956789012" },
-  { cedula: "1801234567", nombres: "Andrés Felipe", apellidos: "Morales Ríos", ciudad: "Ambato", provincia: "Tungurahua", telefono: "0978901234", contacto: "0934567890" },
-  { cedula: "0934567890", nombres: "Lucía Beatriz", apellidos: "Castillo Puma", ciudad: "Guayaquil", provincia: "Guayas", telefono: "0956781234", contacto: "0945678901" },
-  { cedula: "1723456789", nombres: "Roberto Sebastián", apellidos: "Flores Naranjo", ciudad: "Quito", provincia: "Pichincha", telefono: "0912345678", contacto: "0923456789" },
-  { cedula: "1745678901", nombres: "Patricia Elena", apellidos: "Suárez Mendoza", ciudad: "Quito", provincia: "Pichincha", telefono: "0998765432", contacto: "0987654320" },
-  { cedula: "0945678901", nombres: "Diego Armando", apellidos: "Vera Espinoza", ciudad: "Manta", provincia: "Manabí", telefono: "0967890123", contacto: "0978901233" },
-  { cedula: "1756789012", nombres: "Valeria Cristina", apellidos: "Hidalgo Romero", ciudad: "Quito", provincia: "Pichincha", telefono: "0934561234", contacto: "0912345677" },
-];
+
 
 const seedSucursales: Sucursal[] = [
   { codigo_iata: "UIO", ciudad: "Quito", direccion: "Av. Amazonas N37-29 y Naciones Unidas", telefono: "022345678" },
@@ -756,7 +753,7 @@ function ClientesScreen({ data, setData }: {
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<"" | "new" | "edit">("") ;
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [form, setForm] = useState<Cliente>({ cedula: "", nombres: "", apellidos: "", ciudad: "", provincia: "", telefono: "", contacto: "" });
+  const [form, setForm] = useState<Cliente>({ cedula: "", nombres: "", apellidos: "", calle:"" , ciudad: "", provincia: "", telefono: "", contacto: "" });
   const PER_PAGE = 5;
 
   const filtered = useMemo(() => data.filter(c =>
@@ -765,15 +762,36 @@ function ClientesScreen({ data, setData }: {
 
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  const openNew = () => { setForm({ cedula: "", nombres: "", apellidos: "", ciudad: "", provincia: "", telefono: "", contacto: "" }); setModal("new"); };
+  const openNew = () => { setForm({ cedula: "", nombres: "", apellidos: "",calle: "", ciudad: "", provincia: "", telefono: "", contacto: "" }); setModal("new"); };
   const openEdit = (c: Cliente) => { setForm({ ...c }); setModal("edit"); };
-  const save = () => {
-    if (!form.cedula || !form.nombres) return;
-    if (modal === "new") setData([...data, form]);
-    else setData(data.map(c => c.cedula === form.cedula ? form : c));
-    setModal("");
+  //Cambio aqui
+  const save = async () => {
+      if (!form.cedula || !form.nombres) {
+          alert("Complete los campos obligatorios.");
+          return;
+      }
+      try {
+          if (modal === "new") {
+              await crearCliente(form);
+          } else {
+              await actualizarCliente(form);
+          }
+          const datos = await obtenerClientes();
+          setData(datos);
+          setModal("");
+      } catch (error) {
+          console.error(error);
+          alert("Ocurrió un error al guardar el cliente.");
+      }
   };
-  const remove = (cedula: string) => { setData(data.filter(c => c.cedula !== cedula)); setConfirmId(null); };
+
+  //Se añadio
+  const remove = async (cedula: string) => {
+    await eliminarCliente(cedula);
+    const datos = await obtenerClientes();
+    setData(datos);
+    setConfirmId(null);
+};
 
   return (
     <div>
@@ -838,10 +856,11 @@ function ClientesScreen({ data, setData }: {
           footer={<><Btn variant="ghost" onClick={() => setModal("")}>Cancelar</Btn><Btn variant="save" icon={<Check size={14} />} onClick={save}>Guardar</Btn></>}
         >
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Cédula" value={form.cedula} onChange={v => setForm({ ...form, cedula: v })} required disabled={modal === "edit"} />
+            <Input label="Cédula" value={form.cedula} onChange={v => setForm({ ...form, cedula: v })} required/>
             <Input label="Teléfono" value={form.telefono} onChange={v => setForm({ ...form, telefono: v })} />
             <Input label="Nombres" value={form.nombres} onChange={v => setForm({ ...form, nombres: v })} required />
             <Input label="Apellidos" value={form.apellidos} onChange={v => setForm({ ...form, apellidos: v })} required />
+            <Input label="Calle" value={form.calle} onChange={v => setForm({ ...form, calle: v })}/>
             <Input label="Ciudad" value={form.ciudad} onChange={v => setForm({ ...form, ciudad: v })} />
             <Input label="Provincia" value={form.provincia} onChange={v => setForm({ ...form, provincia: v })} />
             <div className="col-span-2">
@@ -1487,12 +1506,25 @@ export default function App() {
   const [user, setUser] = useState("");
   const [activeBranch, setActiveBranch] = useState<Branch>("UIO");
 
-  const [clientes, setClientes] = useState<Cliente[]>(seedClientes);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>(seedSucursales);
   const [vehiculosId, setVehiculosId] = useState<VehiculoId[]>(seedVehiculosId);
   const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>(seedVehiculosTec);
   const [repartidores, setRepartidores] = useState<Repartidor[]>(seedRepartidores);
   const [envios, setEnvios] = useState<Envio[]>(seedEnvios);
+
+  useEffect(() => {
+      cargarClientes();
+  }, []);
+
+  async function cargarClientes() {
+      try {
+          const datos = await obtenerClientes();
+          setClientes(datos);
+      } catch (error) {
+          console.error(error);
+      }
+  }
 
   const handleLogin = (u: string) => { setUser(u); setScreen("dashboard"); };
   const handleLogout = () => { setScreen("login"); setUser(""); };
