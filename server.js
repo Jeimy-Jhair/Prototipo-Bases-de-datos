@@ -11,7 +11,7 @@ app.use(express.json());
 const dbConfig = {
     user: 'sa',
     password: 'Jeimy13', // Reemplaza con la contraseña que le pusiste al sa
-    server: 'DESKTOP-F7TUL80', // O el nombre/IP de tu máquina
+    server: '10.245.144.186', // O el nombre/IP de tu máquina
     database: 'Guayaquil', // Reemplaza con tu base de datos de Guayaquil
     options: {
         encrypt: false, // Ponlo en true si usas Azure o certificados de seguridad SSL
@@ -47,7 +47,7 @@ app.get("/api/clientes", async (req, res) => {
                 Provincia AS provincia,
                 Telefono AS telefono,
                 Contacto_Alterno AS contacto
-            FROM Clientes
+            FROM dbo.Cliente
         `);
         res.json(result.recordset);
     } catch (err) {
@@ -81,7 +81,7 @@ app.post("/api/clientes", async (req, res) => {
             .input("telefono", sql.VarChar(15), telefono)
             .input("contacto", sql.VarChar(15), contacto)
             .query(`
-                INSERT INTO Clientes
+                INSERT INTO dbo.Cliente
                 (
                     Cedula_Cliente,
                     Nombres,
@@ -137,7 +137,7 @@ app.put("/api/clientes/:cedula", async (req, res) => {
             .input("telefono", sql.VarChar(15), telefono)
             .input("contacto", sql.VarChar(15), contacto)
             .query(`
-                UPDATE Clientes
+                UPDATE dbo.Cliente
                 SET
                     Nombres=@nombres,
                     Apellidos=@apellidos,
@@ -166,7 +166,7 @@ app.delete("/api/clientes/:cedula", async (req, res) => {
             .input("cedula", sql.VarChar(10), req.params.cedula)
             .query(`
                 DELETE
-                FROM Clientes
+                FROM dbo.Cliente
                 WHERE Cedula_Cliente=@cedula
             `);
         res.json({
@@ -299,7 +299,7 @@ app.delete("/api/clientes/:cedula",async(req,res)=>{
 
         .input("cedula",sql.VarChar,req.params.cedula)
 
-        .query("DELETE FROM Clientes WHERE cedula=@cedula");
+        .query("DELETE FROM dbo.Cliente WHERE cedula=@cedula");
 
         res.json({
             mensaje:"Eliminado"
