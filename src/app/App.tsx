@@ -1038,15 +1038,15 @@ function VehiculosIdScreen({ data, setData }: { data: VehiculoId[]; setData: (d:
 }
 
 // ── VEHICULOS TEC ──────────────────────────────────────────────────────────
-function VehiculosTecScreen({ data, setData, activeBranch }: { data: VehiculoTec[]; setData: (d: VehiculoTec[]) => void; activeBranch: Branch }) {
-  const [filter, setFilter] = useState<"ALL" | Branch>(activeBranch);
+function VehiculosTecScreen({ data, setData }: { data: VehiculoTec[]; setData: (d: VehiculoTec[]) => void; activeBranch: Branch }) {
+  const [filter, setFilter] = useState<"ALL" | Branch>("GYE");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<"" | "new" | "edit">("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [form, setForm] = useState<VehiculoTec>({ placa: "", anio: 2020, capacidad: "", codigo_iata: "UIO" });
   const PER_PAGE = 6;
-  useEffect(() => { setFilter(activeBranch); setPage(1); }, [activeBranch]);
+  useEffect(() => { setFilter("GYE"); setPage(1); }, ["GYE"]);
 
   const filtered = useMemo(() => data
     .filter(v => filter === "ALL" || v.codigo_iata === filter)
@@ -1079,9 +1079,13 @@ function VehiculosTecScreen({ data, setData, activeBranch }: { data: VehiculoTec
       />
 
       <div className="flex items-center gap-2 mb-3">
-        {(["ALL", "UIO", "GYE"] as const).map(b => (
-          <FilterBtn key={b} label={b === "ALL" ? "Todos" : b === "UIO" ? "Quito · UIO" : "Guayaquil · GYE"}
-            active={filter === b} onClick={() => { setFilter(b); setPage(1); }} />
+        {(["GYE"] as const).map(b => (
+          <FilterBtn 
+            key={b} 
+            label="Guayaquil · GYE"
+            active={filter === b} 
+            onClick={() => { setFilter(b); setPage(1); }} 
+          />
         ))}
         <span className="ml-auto text-xs text-gray-400">{filtered.length} registros</span>
       </div>
@@ -1230,7 +1234,7 @@ function RepartidoresScreen({ data, setData }: { data: Repartidor[]; setData: (d
         {(["GYE"] as const).map(b => (
           <FilterBtn 
             key={b} 
-            label="Guayaquil"
+            label="Guayaquil · GYE"
             active={filter === b} 
             onClick={() => { setFilter(b); setPage(1); }} />
         ))}
