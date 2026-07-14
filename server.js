@@ -746,6 +746,7 @@ app.delete("/api/sucursales/:codigo", async (req, res) => {
 
 });
 
+<<<<<<< HEAD
 //-------------------------------------Vehículo Tecnico
 app.get("/api/vehiculos-tecnicos", async (req, res) => {
     try {
@@ -785,10 +786,56 @@ app.post("/api/vehiculos-tecnicos", async (req, res) => {
                     Anio_Fabricacion,
                     Capacidad_Carga,
                     Codigo_IATA
+=======
+app.get("/api/vehiculos-identificacion", async (req, res) => {
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request().query(`
+            SELECT
+                Placa AS placa,
+                Marca AS marca
+            FROM dbo.Vehiculo_Identificacion
+        `);
+
+        res.json(result.recordset);
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+app.post("/api/vehiculos-identificacion", async (req, res) => {
+
+    try {
+
+        const { placa, marca } = req.body;
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("placa", sql.Char(10), placa)
+            .input("marca", sql.VarChar(50), marca)
+
+            .query(`
+                INSERT INTO dbo.Vehiculo_Identificacion
+                (
+                    Placa,
+                    Marca
+>>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
                 )
                 VALUES
                 (
                     @placa,
+<<<<<<< HEAD
                     @anioFabricacion,
                     @capacidadCarga,
                     @codigoIata
@@ -862,3 +909,85 @@ app.listen(PORT, () => {
     console.log(`Servidor API corriendo localmente en http://localhost:${PORT}`);
 });
 
+=======
+                    @marca
+                )
+            `);
+
+        res.json({
+            mensaje: "Vehículo creado."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+app.put("/api/vehiculos-identificacion/:placa", async (req, res) => {
+
+    try {
+
+        const { marca } = req.body;
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("placa", sql.Char(10), req.params.placa)
+            .input("marca", sql.VarChar(50), marca)
+
+            .query(`
+                UPDATE dbo.Vehiculo_Identificacion
+                SET Marca=@marca
+                WHERE Placa=@placa
+            `);
+
+        res.json({
+            mensaje: "Vehículo actualizado."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+app.delete("/api/vehiculos-identificacion/:placa", async (req, res) => {
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("placa", sql.Char(10), req.params.placa)
+
+            .query(`
+                DELETE
+                FROM dbo.Vehiculo_Identificacion
+                WHERE Placa=@placa
+            `);
+
+        res.json({
+            mensaje: "Vehículo eliminado."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+>>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
