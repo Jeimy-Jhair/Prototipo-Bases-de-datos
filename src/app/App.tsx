@@ -39,19 +39,11 @@ import {
 } from "./services/sucursalesService";
 
 import {
-<<<<<<< HEAD
     obtenerVehiculosTecnicos,
     crearVehiculoTecnico,
     actualizarVehiculoTecnico,
     eliminarVehiculoTecnico
 } from "./services/vehiculosTecnicosService";
-=======
-    obtenerVehiculosIdentificacion,
-    crearVehiculoIdentificacion,
-    actualizarVehiculoIdentificacion,
-    eliminarVehiculoIdentificacion
-} from "./services/vehiculosIdentificacionService";
->>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type Screen =
@@ -68,13 +60,6 @@ interface Sucursal {
     codigo_iata: string;
     ciudad: string;
 }
-<<<<<<< HEAD
-=======
-interface VehiculoId {
-    placa: string;
-    marca: string;
-}
->>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
 interface VehiculoTec { placa: string; anio: number; capacidad: string; codigo_iata: Branch; }
 interface Repartidor {
   codigo: string; cedula: string; nombres: string; apellidos: string;
@@ -87,34 +72,6 @@ interface Envio {
   codigo_iata: Branch;
 }
 
-// ── Seed data ──────────────────────────────────────────────────────────────
-
-<<<<<<< HEAD
-=======
-
-const seedSucursales: Sucursal[] = [
-  { codigo_iata: "UIO", ciudad: "Quito"},
-  { codigo_iata: "GYE", ciudad: "Guayaquil" },
-];
-
-const seedVehiculosId: VehiculoId[] = [
-  { placa: "PBB-1234", marca: "Toyota"},
-  { placa: "GXA-5678", marca: "Chevrolet" },
-  { placa: "PCN-9012", marca: "Ford" },
-  { placa: "GYM-3456", marca: "Hino", },
-  { placa: "PEF-7890", marca: "Mazda"},
-  { placa: "GHJ-2345", marca: "Mitsubishi"},
-];
-
->>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
-const seedVehiculosTec: VehiculoTec[] = [
-  { placa: "PBB-1234", anio: 2021, capacidad: "1.5 Ton", codigo_iata: "UIO" },
-  { placa: "GXA-5678", anio: 2020, capacidad: "3.5 Ton", codigo_iata: "GYE" },
-  { placa: "PCN-9012", anio: 2022, capacidad: "2.0 Ton", codigo_iata: "UIO" },
-  { placa: "GYM-3456", anio: 2019, capacidad: "5.0 Ton", codigo_iata: "GYE" },
-  { placa: "PEF-7890", anio: 2023, capacidad: "1.0 Ton", codigo_iata: "UIO" },
-  { placa: "GHJ-2345", anio: 2018, capacidad: "2.5 Ton", codigo_iata: "GYE" },
-];
 
 
 // ── Charts data ────────────────────────────────────────────────────────────
@@ -1233,139 +1190,6 @@ function SucursalesScreen({ data, setData }: { data: Sucursal[]; setData: (d: Su
 }
 
 // ── VEHICULOS ID ───────────────────────────────────────────────────────────
-<<<<<<< HEAD
-=======
-function VehiculosIdScreen({ data, setData }: { data: VehiculoId[]; setData: (d: VehiculoId[]) => void }) {
-  const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [modal, setModal] = useState<"" | "new" | "edit">("");
-  const [confirmId, setConfirmId] = useState<string | null>(null);
- const [form, setForm] = useState<VehiculoId>({
-    placa: "",
-    marca: ""
-});
-  const PER_PAGE = 6;
-
-  const filtered = useMemo(() => data.filter(v =>
-    [v.placa, v.marca].some(f => f.toLowerCase().includes(search.toLowerCase()))
-  ), [data, search]);
-
-  const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const openNew = () => { setForm({ placa: "", marca: "" }); setModal("new"); };
-  const openEdit = (v: VehiculoId) => { setForm({ ...v }); setModal("edit"); };
- const save = async () => {
-
-    if (!form.placa || !form.marca) return;
-
-    try {
-
-        if (modal === "new") {
-
-            await crearVehiculoIdentificacion({
-                placa: form.placa,
-                marca: form.marca
-            });
-
-        } else {
-
-            await actualizarVehiculoIdentificacion({
-                placa: form.placa,
-                marca: form.marca
-            });
-
-        }
-
-        const datos = await obtenerVehiculosIdentificacion();
-
-        setData(datos);
-
-        setModal("");
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert("Ocurrió un error al guardar el vehículo.");
-
-    }
-
-};
-const remove = async (placa: string) => {
-
-    try {
-
-        await eliminarVehiculoIdentificacion(placa);
-
-        const datos = await obtenerVehiculosIdentificacion();
-
-        setData(datos);
-
-        setConfirmId(null);
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert("Ocurrió un error al eliminar el vehículo.");
-
-    }
-
-};
-
-  return (
-    <div>
-      <Breadcrumb items={["Inicio", "Fragmentación Vertical", "Vehículo Identificación"]} />
-      <PageHeader
-        title="Vehículo — Identificación"
-        subtitle="Fragmento vertical: Placa, Marca (compartido entre nodos)"
-        actions={
-          <>
-            <SearchBar value={search} onChange={v => { setSearch(v); setPage(1); }} placeholder="Buscar vehículo..." />
-            <Btn variant="save" icon={<Plus size={14} />} onClick={openNew}>Nuevo Vehículo</Btn>
-          </>
-        }
-      />
-      <div className="bg-white rounded-lg border border-[#1a3a6b]/10 shadow-sm">
-        <div className="px-4 py-2.5 border-b border-gray-50 flex items-center gap-2 text-xs text-gray-500">
-          <Badge label="Frag. Vertical" color="blue" />
-          <span className="text-gray-300">|</span>
-          <span>{filtered.length} vehículos registrados</span>
-        </div>
-        <TableWrap>
-          <thead><tr><Th>Placa</Th><Th>Marca</Th><Th>Acciones</Th></tr></thead>
-          <tbody>
-            {paged.map((v, i) => (
-              <tr key={v.placa} className={`hover:bg-[#f5f7fb] transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/50"}`}>
-                <Td><span className="font-mono font-semibold text-[#1a3a6b]">{v.placa}</span></Td>
-                <Td><div className="flex items-center gap-1.5"><Truck size={13} className="text-gray-400" /><span className="font-medium">{v.marca}</span></div></Td>
-                <Td>
-                  <div className="flex gap-1">
-                    <Btn size="sm" variant="edit" icon={<Edit2 size={11} />} onClick={() => openEdit(v)}>Editar</Btn>
-                    <Btn size="sm" variant="danger" icon={<Trash2 size={11} />} onClick={() => setConfirmId(v.placa)}>Eliminar</Btn>
-                  </div>
-                </Td>
-              </tr>
-            ))}
-            {paged.length === 0 && <tr><td colSpan={3} className="text-center py-8 text-sm text-gray-400">Sin resultados</td></tr>}
-          </tbody>
-        </TableWrap>
-        <div className="px-4 pb-3"><Pagination page={page} total={filtered.length} perPage={PER_PAGE} onChange={setPage} /></div>
-      </div>
-
-      {(modal === "new" || modal === "edit") && (
-        <Modal title={modal === "new" ? "Nuevo Vehículo" : "Editar Vehículo"} onClose={() => setModal("")}
-          footer={<><Btn variant="ghost" onClick={() => setModal("")}>Cancelar</Btn><Btn variant="save" icon={<Check size={14} />} onClick={save}>Guardar</Btn></>}>
-          <div className="grid grid-cols-2 gap-3">
-            <Input label="Placa" value={form.placa} onChange={v => setForm({ ...form, placa: v })} required />
-            <Input label="Marca" value={form.marca} onChange={v => setForm({ ...form, marca: v })} required />
-          </div>
-        </Modal>
-      )}
-      {confirmId && <ConfirmDialog message={`¿Eliminar el vehículo ${confirmId}?`} onConfirm={() => remove(confirmId)} onCancel={() => setConfirmId(null)} />}
-    </div>
-  );
-}
->>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
 
 // ── VEHICULOS TEC ──────────────────────────────────────────────────────────
 function VehiculosTecScreen({ data, setData }: { data: VehiculoTec[]; setData: (d: VehiculoTec[]) => void; activeBranch: Branch }) {
@@ -2002,28 +1826,16 @@ export default function App() {
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-<<<<<<< HEAD
   const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>([]);
   const [repartidores, setRepartidores] = useState<Repartidor[]>([]);
   const [envios, setEnvios] = useState<Envio[]>([]);
-=======
- const [vehiculosId, setVehiculosId] = useState<VehiculoId[]>([]);
-  const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>(seedVehiculosTec);
-  const [repartidores, setRepartidores] = useState<Repartidor[]>(seedRepartidores);
-  const [envios, setEnvios] = useState<Envio[]>(seedEnvios);
->>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
 
   useEffect(() => {
       cargarClientes();
       cargarEnvios();
       cargarRepartidores();
       cargarSucursales();
-<<<<<<< HEAD
       cargarVehiculosTecnicos();
-=======
-      cargarVehiculosIdentificacion();
-
->>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
   }, []);
 
 
@@ -2087,7 +1899,6 @@ export default function App() {
     }
     }
 
-<<<<<<< HEAD
     async function cargarVehiculosTecnicos() {
     try {
         const datos = await obtenerVehiculosTecnicos();
@@ -2103,26 +1914,6 @@ export default function App() {
     }
     }
     
-=======
-}
-
-const cargarVehiculosIdentificacion = async () => {
-
-    try {
-
-        const datos = await obtenerVehiculosIdentificacion();
-
-        setVehiculosId(datos);
-
-    } catch (error) {
-
-        console.error(error);
-
-    }
-
-};
-
->>>>>>> e17536ca536bc2c4eeb06afebf20cd0ac329b4f2
   const handleLogin = (u: string) => { setUser(u); setScreen("dashboard"); };
   const handleLogout = () => { setScreen("login"); setUser(""); };
   const toggleBranch = () => setActiveBranch(b => b === "UIO" ? "GYE" : "UIO");
