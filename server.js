@@ -613,6 +613,138 @@ app.delete("/api/repartidores/:codigoUnico", async (req, res) => {
     }
 });
 
+app.get("/api/sucursales", async (req, res) => {
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        const result = await pool.request().query(`
+            SELECT
+                Codigo_IATA AS codigo_iata,
+                Ciudad AS ciudad
+            FROM dbo.Sucursal
+        `);
+
+        res.json(result.recordset);
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+app.post("/api/sucursales", async (req, res) => {
+
+    try {
+
+        const { codigo, ciudad } = req.body;
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("codigo", sql.Char(3), codigo)
+            .input("ciudad", sql.VarChar(50), ciudad)
+
+            .query(`
+                INSERT INTO dbo.Sucursal
+                (
+                    Codigo_IATA,
+                    Ciudad
+                )
+
+                VALUES
+                (
+                    @codigo,
+                    @ciudad
+                )
+            `);
+
+        res.json({
+            mensaje: "Sucursal creada."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+app.put("/api/sucursales/:codigo", async (req, res) => {
+
+    try {
+
+        const { ciudad } = req.body;
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("codigo", sql.Char(3), req.params.codigo)
+            .input("ciudad", sql.VarChar(50), ciudad)
+
+            .query(`
+                UPDATE dbo.Sucursal
+
+                SET Ciudad=@ciudad
+
+                WHERE Codigo_IATA=@codigo
+            `);
+
+        res.json({
+            mensaje: "Sucursal actualizada."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
+
+
+
+app.delete("/api/sucursales/:codigo", async (req, res) => {
+
+    try {
+
+        const pool = await sql.connect(dbConfig);
+
+        await pool.request()
+
+            .input("codigo", sql.Char(3), req.params.codigo)
+
+            .query(`
+                DELETE
+                FROM dbo.Sucursal
+                WHERE Codigo_IATA=@codigo
+            `);
+
+        res.json({
+            mensaje: "Sucursal eliminada."
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+            error: err.message
+        });
+
+    }
+
+});
 
 //-----------------------Puerto
 const PORT = process.env.PORT || 5000;
