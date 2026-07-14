@@ -38,6 +38,13 @@ import {
     eliminarSucursal
 } from "./services/sucursalesService";
 
+import {
+    obtenerVehiculosTecnicos,
+    crearVehiculoTecnico,
+    actualizarVehiculoTecnico,
+    eliminarVehiculoTecnico
+} from "./services/vehiculosTecnicosService";
+
 // ── Types ──────────────────────────────────────────────────────────────────
 type Screen =
   | "login" | "dashboard" | "clientes" | "sucursales"
@@ -1195,15 +1202,15 @@ function SucursalesScreen({ data, setData }: { data: Sucursal[]; setData: (d: Su
 // ── VEHICULOS ID ───────────────────────────────────────────────────────────
 
 // ── VEHICULOS TEC ──────────────────────────────────────────────────────────
-function VehiculosTecScreen({ data, setData, activeBranch }: { data: VehiculoTec[]; setData: (d: VehiculoTec[]) => void; activeBranch: Branch }) {
-  const [filter, setFilter] = useState<"ALL" | Branch>(activeBranch);
+function VehiculosTecScreen({ data, setData }: { data: VehiculoTec[]; setData: (d: VehiculoTec[]) => void; activeBranch: Branch }) {
+  const [filter, setFilter] = useState<"ALL" | Branch>("GYE");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<"" | "new" | "edit">("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [form, setForm] = useState<VehiculoTec>({ placa: "", anio: 2020, capacidad: "", codigo_iata: "UIO" });
   const PER_PAGE = 6;
-  useEffect(() => { setFilter(activeBranch); setPage(1); }, [activeBranch]);
+  useEffect(() => { setFilter("GYE"); setPage(1); }, ["GYE"]);
 
   const filtered = useMemo(() => data
     .filter(v => filter === "ALL" || v.codigo_iata === filter)
@@ -1213,13 +1220,56 @@ function VehiculosTecScreen({ data, setData, activeBranch }: { data: VehiculoTec
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const openNew = () => { setForm({ placa: "", anio: 2022, capacidad: "", codigo_iata: filter === "ALL" ? "UIO" : filter }); setModal("new"); };
   const openEdit = (v: VehiculoTec) => { setForm({ ...v }); setModal("edit"); };
-  const save = () => {
+const save = async () => {
+
     if (!form.placa) return;
-    if (modal === "new") setData([...data, form]);
-    else setData(data.map(v => v.placa === form.placa ? form : v));
-    setModal("");
-  };
-  const remove = (placa: string) => { setData(data.filter(v => v.placa !== placa)); setConfirmId(null); };
+
+    const vehiculoApi = {
+    placa: form.placa,
+    anioFabricacion: form.anio,
+    capacidadCarga: Number(form.capacidad),
+    codigoIata: form.codigo_iata
+    };
+        try {
+            if (modal === "new") {
+                await crearVehiculoTecnico(vehiculoApi);
+            } else {
+                await actualizarVehiculoTecnico(vehiculoApi);
+            }
+            const datos = await obtenerVehiculosTecnicos();
+            const vehiculos = datos.map((v: any) => ({
+                placa: v.placa,
+                anio: v.anioFabricacion,
+                capacidad: String(v.capacidadCarga),
+                codigo_iata: v.codigoIata
+            }));
+setData(vehiculos);
+            setModal("");
+        } catch (error) {
+            console.error(error);
+            alert("Ocurrió un error al guardar el vehículo.");
+        }
+    };
+
+    const remove = async (placa: string) => {
+        try {
+            await eliminarVehiculoTecnico(placa);
+            const datos = await obtenerVehiculosTecnicos();
+
+            const vehiculos = datos.map((v: any) => ({
+                placa: v.placa,
+                anio: v.anioFabricacion,
+                capacidad: String(v.capacidadCarga),
+                codigo_iata: v.codigoIata
+            }));
+setData(vehiculos);
+            setData(vehiculos);
+            setConfirmId(null);
+        } catch (error) {
+            console.error(error);
+            alert("Ocurrió un error al eliminar el vehículo.");
+        }
+    };
 
   return (
     <div>
@@ -1236,10 +1286,14 @@ function VehiculosTecScreen({ data, setData, activeBranch }: { data: VehiculoTec
       />
 
       <div className="flex items-center gap-2 mb-3">
-        {(["ALL", "UIO", "GYE"] as const).map(b => (
-          <FilterBtn key={b} label={b === "ALL" ? "Todos" : b === "UIO" ? "Quito · UIO" : "Guayaquil · GYE"}
-            active={filter === b} onClick={() => { setFilter(b); setPage(1); }} />
-        ))}
+        {(["GYE"] as const).map(b => (
+        <FilterBtn 
+          key={b} 
+          label="Guayaquil · GYE"
+          active={filter === b} 
+          onClick={() => { setFilter(b); setPage(1); }} 
+        />
+      ))}
         <span className="ml-auto text-xs text-gray-400">{filtered.length} registros</span>
       </div>
 
@@ -1276,7 +1330,7 @@ function VehiculosTecScreen({ data, setData, activeBranch }: { data: VehiculoTec
             <Input label="Año Fabricación" type="number" value={String(form.anio)} onChange={v => setForm({ ...form, anio: parseInt(v) || 2020 })} required />
             <Input label="Capacidad Carga" value={form.capacidad} onChange={v => setForm({ ...form, capacidad: v })} placeholder="ej. 2.5 Ton" />
             <Select label="Sucursal (IATA)" value={form.codigo_iata} onChange={v => setForm({ ...form, codigo_iata: v as Branch })}
-              options={[{ value: "UIO", label: "Quito (UIO)" }, { value: "GYE", label: "Guayaquil (GYE)" }]} required />
+              options={[{ value: "GYE", label: "Guayaquil (GYE)" }]} required />
           </div>
         </Modal>
       )}
@@ -1441,7 +1495,7 @@ function RepartidoresScreen({ data, setData }: { data: Repartidor[]; setData: (d
             <Input label="Provincia" value={form.provincia} onChange={v => setForm({ ...form, provincia: v })} />
             <Select label="Sucursal (Fragmento)" value={form.codigo_iata}
               onChange={v => setForm({ ...form, codigo_iata: v as Branch })}
-              options={[{ value: "UIO", label: "Quito — Repartidor_UIO" }, { value: "GYE", label: "Guayaquil — Repartidor_GYE" }]} required />
+              options={[{ value: "GYE", label: "Guayaquil — Repartidor_GYE" }]} required />
           </div>
         </Modal>
       )}
@@ -1782,7 +1836,7 @@ export default function App() {
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>(seedVehiculosTec);
+  const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>([]);
   const [repartidores, setRepartidores] = useState<Repartidor[]>([]);
   const [envios, setEnvios] = useState<Envio[]>([]);
 
@@ -1791,6 +1845,7 @@ export default function App() {
       cargarEnvios();
       cargarRepartidores();
       cargarSucursales();
+      cargarVehiculosTecnicos();
   }, []);
 
 
@@ -1854,6 +1909,21 @@ export default function App() {
     }
     }
 
+    async function cargarVehiculosTecnicos() {
+    try {
+        const datos = await obtenerVehiculosTecnicos();
+        const vehiculos = datos.map((v: any) => ({
+            placa: v.placa,
+            anio: v.anioFabricacion,
+            capacidad: String(v.capacidadCarga),
+            codigo_iata: v.codigoIata
+        }));
+        setVehiculosTec(vehiculos);
+    } catch (error) {
+        console.error(error);
+    }
+    }
+    
   const handleLogin = (u: string) => { setUser(u); setScreen("dashboard"); };
   const handleLogout = () => { setScreen("login"); setUser(""); };
   const toggleBranch = () => setActiveBranch(b => b === "UIO" ? "GYE" : "UIO");
@@ -1862,7 +1932,7 @@ export default function App() {
 
   const SCREEN_LABELS: Record<Screen, string> = {
     login: "Login", dashboard: "Dashboard", clientes: "Clientes",
-    sucursales: "Sucursales", "vehiculos-id": "Vehículo Identificación",
+    sucursales: "Sucursales",
     "vehiculos-tec": "Vehículo Técnico", repartidores: "Repartidores",
     envios: "Envíos", reportes: "Reportes",
   };

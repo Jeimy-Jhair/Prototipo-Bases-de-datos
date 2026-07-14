@@ -746,8 +746,119 @@ app.delete("/api/sucursales/:codigo", async (req, res) => {
 
 });
 
+//-------------------------------------Vehículo Tecnico
+app.get("/api/vehiculos-tecnicos", async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+        const result = await pool.request().query(`
+            SELECT
+                Placa AS placa,
+                Anio_Fabricacion AS anioFabricacion,
+                Capacidad_Carga AS capacidadCarga,
+                Codigo_IATA AS codigoIata
+            FROM dbo.Vehiculo_Tecnico_GYE
+        `);
+        res.json(result.recordset);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post("/api/vehiculos-tecnicos", async (req, res) => {
+    try {
+        const {
+            placa,
+            anioFabricacion,
+            capacidadCarga,
+            codigoIata
+        } = req.body;
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("placa", sql.Char(10), placa)
+            .input("anioFabricacion", sql.SmallInt, anioFabricacion)
+            .input("capacidadCarga", sql.Decimal(10,2), capacidadCarga)
+            .input("codigoIata", sql.VarChar(5), codigoIata)
+            .query(`
+                INSERT INTO dbo.Vehiculo_Tecnico_GYE
+                (
+                    Placa,
+                    Anio_Fabricacion,
+                    Capacidad_Carga,
+                    Codigo_IATA
+                )
+                VALUES
+                (
+                    @placa,
+                    @anioFabricacion,
+                    @capacidadCarga,
+                    @codigoIata
+                )
+            `);
+        res.status(201).json({
+            mensaje: "Vehículo creado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+app.put("/api/vehiculos-tecnicos/:placa", async (req, res) => {
+    try {
+        const { placa } = req.params;
+        const {
+            anioFabricacion,
+            capacidadCarga,
+            codigoIata
+        } = req.body;
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("placa", sql.Char(10), placa)
+            .input("anioFabricacion", sql.SmallInt, anioFabricacion)
+            .input("capacidadCarga", sql.Decimal(10,2), capacidadCarga)
+            .input("codigoIata", sql.VarChar(5), codigoIata)
+            .query(`
+                UPDATE dbo.Vehiculo_Tecnico_GYE
+                SET
+                    Anio_Fabricacion = @anioFabricacion,
+                    Capacidad_Carga = @capacidadCarga,
+                    Codigo_IATA = @codigoIata
+                WHERE Placa = @placa
+            `);
+        res.json({
+            mensaje: "Vehículo actualizado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
+app.delete("/api/vehiculos-tecnicos/:placa", async (req, res) => {
+    try {
+        const pool = await sql.connect(dbConfig);
+        await pool.request()
+            .input("placa", sql.Char(10), req.params.placa)
+            .query(`
+                DELETE
+                FROM dbo.Vehiculo_Tecnico_GYE
+                WHERE Placa = @placa
+            `);
+        res.json({
+            mensaje: "Vehículo eliminado correctamente"
+        });
+    } catch (err) {
+        res.status(500).json({
+            error: err.message
+        });
+    }
+});
+
 //-----------------------Puerto
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Servidor API corriendo localmente en http://localhost:${PORT}`);
 });
+
