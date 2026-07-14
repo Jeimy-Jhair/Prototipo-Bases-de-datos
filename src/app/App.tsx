@@ -24,6 +24,13 @@ import {
     eliminarSucursal
 } from "./services/sucursalesService";
 
+import {
+    obtenerVehiculosIdentificacion,
+    crearVehiculoIdentificacion,
+    actualizarVehiculoIdentificacion,
+    eliminarVehiculoIdentificacion
+} from "./services/vehiculosIdentificacionService";
+
 // ── Types ──────────────────────────────────────────────────────────────────
 type Screen =
   | "login" | "dashboard" | "clientes" | "sucursales"
@@ -39,7 +46,10 @@ interface Sucursal {
     codigo_iata: string;
     ciudad: string;
 }
-interface VehiculoId { placa: string; marca: string; modelo: string; color: string; }
+interface VehiculoId {
+    placa: string;
+    marca: string;
+}
 interface VehiculoTec { placa: string; anio: number; capacidad: string; codigo_iata: Branch; }
 interface Repartidor {
   codigo: string; cedula: string; nombres: string; apellidos: string;
@@ -61,12 +71,12 @@ const seedSucursales: Sucursal[] = [
 ];
 
 const seedVehiculosId: VehiculoId[] = [
-  { placa: "PBB-1234", marca: "Toyota", modelo: "Hilux", color: "Blanco" },
-  { placa: "GXA-5678", marca: "Chevrolet", modelo: "NPR", color: "Azul" },
-  { placa: "PCN-9012", marca: "Ford", modelo: "Transit", color: "Gris" },
-  { placa: "GYM-3456", marca: "Hino", modelo: "300", color: "Blanco" },
-  { placa: "PEF-7890", marca: "Mazda", modelo: "BT-50", color: "Negro" },
-  { placa: "GHJ-2345", marca: "Mitsubishi", modelo: "L300", color: "Blanco" },
+  { placa: "PBB-1234", marca: "Toyota"},
+  { placa: "GXA-5678", marca: "Chevrolet" },
+  { placa: "PCN-9012", marca: "Ford" },
+  { placa: "GYM-3456", marca: "Hino", },
+  { placa: "PEF-7890", marca: "Mazda"},
+  { placa: "GHJ-2345", marca: "Mitsubishi"},
 ];
 
 const seedVehiculosTec: VehiculoTec[] = [
@@ -1217,23 +1227,77 @@ function VehiculosIdScreen({ data, setData }: { data: VehiculoId[]; setData: (d:
   const [page, setPage] = useState(1);
   const [modal, setModal] = useState<"" | "new" | "edit">("");
   const [confirmId, setConfirmId] = useState<string | null>(null);
-  const [form, setForm] = useState<VehiculoId>({ placa: "", marca: "", modelo: "", color: "" });
+ const [form, setForm] = useState<VehiculoId>({
+    placa: "",
+    marca: ""
+});
   const PER_PAGE = 6;
 
   const filtered = useMemo(() => data.filter(v =>
-    [v.placa, v.marca, v.modelo].some(f => f.toLowerCase().includes(search.toLowerCase()))
+    [v.placa, v.marca].some(f => f.toLowerCase().includes(search.toLowerCase()))
   ), [data, search]);
 
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-  const openNew = () => { setForm({ placa: "", marca: "", modelo: "", color: "" }); setModal("new"); };
+  const openNew = () => { setForm({ placa: "", marca: "" }); setModal("new"); };
   const openEdit = (v: VehiculoId) => { setForm({ ...v }); setModal("edit"); };
-  const save = () => {
+ const save = async () => {
+
     if (!form.placa || !form.marca) return;
-    if (modal === "new") setData([...data, form]);
-    else setData(data.map(v => v.placa === form.placa ? form : v));
-    setModal("");
-  };
-  const remove = (placa: string) => { setData(data.filter(v => v.placa !== placa)); setConfirmId(null); };
+
+    try {
+
+        if (modal === "new") {
+
+            await crearVehiculoIdentificacion({
+                placa: form.placa,
+                marca: form.marca
+            });
+
+        } else {
+
+            await actualizarVehiculoIdentificacion({
+                placa: form.placa,
+                marca: form.marca
+            });
+
+        }
+
+        const datos = await obtenerVehiculosIdentificacion();
+
+        setData(datos);
+
+        setModal("");
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Ocurrió un error al guardar el vehículo.");
+
+    }
+
+};
+const remove = async (placa: string) => {
+
+    try {
+
+        await eliminarVehiculoIdentificacion(placa);
+
+        const datos = await obtenerVehiculosIdentificacion();
+
+        setData(datos);
+
+        setConfirmId(null);
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert("Ocurrió un error al eliminar el vehículo.");
+
+    }
+
+};
 
   return (
     <div>
@@ -1255,14 +1319,12 @@ function VehiculosIdScreen({ data, setData }: { data: VehiculoId[]; setData: (d:
           <span>{filtered.length} vehículos registrados</span>
         </div>
         <TableWrap>
-          <thead><tr><Th>Placa</Th><Th>Marca</Th><Th>Modelo</Th><Th>Color</Th><Th>Acciones</Th></tr></thead>
+          <thead><tr><Th>Placa</Th><Th>Marca</Th><Th>Acciones</Th></tr></thead>
           <tbody>
             {paged.map((v, i) => (
               <tr key={v.placa} className={`hover:bg-[#f5f7fb] transition-colors ${i % 2 === 0 ? "" : "bg-gray-50/50"}`}>
                 <Td><span className="font-mono font-semibold text-[#1a3a6b]">{v.placa}</span></Td>
                 <Td><div className="flex items-center gap-1.5"><Truck size={13} className="text-gray-400" /><span className="font-medium">{v.marca}</span></div></Td>
-                <Td>{v.modelo}</Td>
-                <Td><div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full border border-gray-200" style={{ background: v.color === "Blanco" ? "#fff" : v.color === "Azul" ? "#2563eb" : v.color === "Gris" ? "#9ca3af" : v.color === "Negro" ? "#111" : "#d97706" }} />{v.color}</div></Td>
                 <Td>
                   <div className="flex gap-1">
                     <Btn size="sm" variant="edit" icon={<Edit2 size={11} />} onClick={() => openEdit(v)}>Editar</Btn>
@@ -1271,7 +1333,7 @@ function VehiculosIdScreen({ data, setData }: { data: VehiculoId[]; setData: (d:
                 </Td>
               </tr>
             ))}
-            {paged.length === 0 && <tr><td colSpan={5} className="text-center py-8 text-sm text-gray-400">Sin resultados</td></tr>}
+            {paged.length === 0 && <tr><td colSpan={3} className="text-center py-8 text-sm text-gray-400">Sin resultados</td></tr>}
           </tbody>
         </TableWrap>
         <div className="px-4 pb-3"><Pagination page={page} total={filtered.length} perPage={PER_PAGE} onChange={setPage} /></div>
@@ -1283,8 +1345,6 @@ function VehiculosIdScreen({ data, setData }: { data: VehiculoId[]; setData: (d:
           <div className="grid grid-cols-2 gap-3">
             <Input label="Placa" value={form.placa} onChange={v => setForm({ ...form, placa: v })} required />
             <Input label="Marca" value={form.marca} onChange={v => setForm({ ...form, marca: v })} required />
-            <Input label="Modelo" value={form.modelo} onChange={v => setForm({ ...form, modelo: v })} />
-            <Input label="Color" value={form.color} onChange={v => setForm({ ...form, color: v })} />
           </div>
         </Modal>
       )}
@@ -1769,7 +1829,7 @@ export default function App() {
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [sucursales, setSucursales] = useState<Sucursal[]>([]);
-  const [vehiculosId, setVehiculosId] = useState<VehiculoId[]>(seedVehiculosId);
+ const [vehiculosId, setVehiculosId] = useState<VehiculoId[]>([]);
   const [vehiculosTec, setVehiculosTec] = useState<VehiculoTec[]>(seedVehiculosTec);
   const [repartidores, setRepartidores] = useState<Repartidor[]>(seedRepartidores);
   const [envios, setEnvios] = useState<Envio[]>(seedEnvios);
@@ -1777,6 +1837,8 @@ export default function App() {
   useEffect(() => {
       cargarClientes();
       cargarSucursales();
+      cargarVehiculosIdentificacion();
+
   }, []);
 
   async function cargarClientes() {
@@ -1804,6 +1866,22 @@ export default function App() {
     }
 
 }
+
+const cargarVehiculosIdentificacion = async () => {
+
+    try {
+
+        const datos = await obtenerVehiculosIdentificacion();
+
+        setVehiculosId(datos);
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+};
 
   const handleLogin = (u: string) => { setUser(u); setScreen("dashboard"); };
   const handleLogout = () => { setScreen("login"); setUser(""); };
