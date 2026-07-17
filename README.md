@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
   # Admin Dashboard Prototype
 
@@ -9,3 +10,6 @@
 
   Run `npm run dev` to start the development server.
   
+=======
+# Prototipo-Bases-de-datos
+>>>>>>> 58aa3713bf2a0061517e2abd33bcc932dc8093c0
