@@ -356,6 +356,7 @@ app.delete("/api/envios/:codigoPaquete", async (req, res) => {
 
 app.get("/api/repartidores", async (req, res) => {
   try {
+    //console.log("DATOS RECIBIDOS EN ENVIO:");
     const db = await getPool();
 
     const result = await db.request().query(`
@@ -381,6 +382,7 @@ app.get("/api/repartidores", async (req, res) => {
 
 app.post("/api/repartidores", async (req, res) => {
   try {
+    //console.log("DATOS RECIBIDOS EN ENVIO:");
     const {
       codigoUnico,
       cedula,
@@ -449,7 +451,8 @@ app.post("/api/repartidores", async (req, res) => {
 
 app.put("/api/repartidores/:codigoUnico", async (req, res) => {
   try {
-    const { codigoUnico } = req.params;
+
+    const codigoUnico = req.params.codigoUnico.trim();
 
     const {
       cedula,
@@ -463,20 +466,23 @@ app.put("/api/repartidores/:codigoUnico", async (req, res) => {
       codigoIata,
     } = req.body;
 
+    console.log("PARAMS:", req.params);
+    console.log("BODY:", req.body);
+
     const db = await getPool();
 
-    await db
+    const result = await db
       .request()
       .input("codigoUnico", sql.Char(10), codigoUnico)
-      .input("cedula", sql.Char(10), cedula)
+      .input("cedula", sql.Char(10), cedula.trim())
       .input("nombres", sql.VarChar(50), nombres)
       .input("apellidos", sql.VarChar(50), apellidos)
       .input("fechaNacimiento", sql.Date, fechaNacimiento)
       .input("direccion", sql.VarChar(100), direccion)
       .input("ciudad", sql.VarChar(50), ciudad)
       .input("provincia", sql.VarChar(50), provincia)
-      .input("telefono", sql.Char(10), telefono)
-      .input("codigoIata", sql.VarChar(5), codigoIata)
+      .input("telefono", sql.Char(10), telefono.trim())
+      .input("codigoIata", sql.Char(3), codigoIata.trim())
       .query(`
         SET XACT_ABORT ON;
 
@@ -489,18 +495,29 @@ app.put("/api/repartidores/:codigoUnico", async (req, res) => {
           Direccion = @direccion,
           Ciudad = @ciudad,
           Provincia = @provincia,
-          Telefono = @telefono,
-          Codigo_IATA = @codigoIata
+          Telefono = @telefono
         WHERE
           Codigo_Unico = @codigoUnico
-          AND Codigo_IATA = @codigoIata
+          AND Codigo_IATA = @codigoIata;
       `);
 
+    console.log("Rows affected:", result.rowsAffected);
+
+    if (result.rowsAffected[0] === 0) {
+      return res.status(404).json({
+        mensaje: "No se encontró el repartidor para actualizar."
+      });
+    }
+
     res.json({
-      mensaje: "Repartidor actualizado correctamente",
+      mensaje: "Repartidor actualizado correctamente"
     });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    res.status(500).json({
+      error: err.message
+    });
   }
 });
 
