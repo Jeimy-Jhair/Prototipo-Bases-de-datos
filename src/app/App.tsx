@@ -856,7 +856,7 @@ function ClientesScreen({ data, setData }: {
           footer={<><Btn variant="ghost" onClick={() => setModal("")}>Cancelar</Btn><Btn variant="save" icon={<Check size={14} />} onClick={save}>Guardar</Btn></>}
         >
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Cédula" value={form.cedula} onChange={v => setForm({ ...form, cedula: v })} required disabled={modal === "edit"} /> //Aqui se hiso un cambio disabled={modal === "edit"}
+            <Input label="Cédula" value={form.cedula} onChange={v => setForm({ ...form, cedula: v })} required disabled={modal === "edit"} /> 
             <Input label="Teléfono" value={form.telefono} onChange={v => setForm({ ...form, telefono: v })} />
             <Input label="Nombres" value={form.nombres} onChange={v => setForm({ ...form, nombres: v })} required />
             <Input label="Apellidos" value={form.apellidos} onChange={v => setForm({ ...form, apellidos: v })} required />

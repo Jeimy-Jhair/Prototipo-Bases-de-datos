@@ -108,7 +108,7 @@ SELECT
     Anio_Fabricacion,
     Capacidad_Carga,
     Codigo_IATA
-FROM [Guayaquil].[dbo].[Vehiculo_Tecnico_GYE];
+FROM [10.245.144.186].Guayaquil.dbo.Envio_GYE;
 GO
 
 ---drop view vw_Vehiculo_Tecnico
